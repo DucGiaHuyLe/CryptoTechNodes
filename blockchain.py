@@ -51,6 +51,8 @@ class Blockchain:
             self.blockchain_name = "BTC"
         elif port == 6050:
             self.blockchain_name = "CTC"
+        elif port == 7000:
+            self.blockchain_name = "CTC"
 
 
     def export_blockchain(self):
@@ -159,7 +161,7 @@ class Blockchain:
         block_string = json.dumps(block, sort_keys=True).encode()
         return hashlib.sha256(block_string).hexdigest()
 
-    def new_transaction(self, sender, recipient, amount, signature, sender_wallet_address, transaction_fee):
+    def new_transaction(self, sender, recipient, amount, signature, sender_wallet_address, transaction_fee, referral_code=""):
         """
         Creates a new transaction to go into the next mined Block.
 
@@ -170,7 +172,7 @@ class Blockchain:
         :param sender_wallet_address: <str> Wallet address of the Sender
         :return: <int> The index of the Block that will hold this transaction
         """
-        transaction = Transaction(sender, recipient, amount, signature, sender_wallet_address, transaction_fee)
+        transaction = Transaction(sender, recipient, amount, signature, sender_wallet_address, transaction_fee, referral_code)
         self.current_transactions.append(transaction)
         return transaction
 
@@ -465,7 +467,7 @@ class Blockchain:
 
 
     # Creating a Chain of Data( Append a new value as well as the last blockchain value to the blockchain )
-    def add_transaction(self, sender, recipient, signature, amount, sender_wallet_address, transaction_fee, is_receiving=False):
+    def add_transaction(self, sender, recipient, signature, amount, sender_wallet_address, transaction_fee, referral_code, is_receiving=False):
         """
         Adds a new transaction to the list of transactions.
 
@@ -491,7 +493,8 @@ class Blockchain:
                         "amount": amount, 
                         "signature": signature,
                         "sender_wallet_address": sender_wallet_address,
-                        "transaction_fee": transaction_fee
+                        "transaction_fee": transaction_fee,
+                        "referral_code": referral_code
                     },
                     "id": 1  # The request ID can be any integer
                 }

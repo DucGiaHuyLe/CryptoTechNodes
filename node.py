@@ -23,10 +23,11 @@ def mine(coin, miner_address = None, private_key = None):
         "FC": 1000.0,  #FC reward
         "TKC": 2400.0, #TKC reward
         "BTC": 6.25,   #BTC reward
-        "CTC": 2000.0  #CTC Reward
+        "CTC": 2000.0,  #CTC Reward
+        "RP": 2000.0  #RP Reward
     } 
 
-    if coin not in ["FC", "TKC", "BTC", "CTC"]:
+    if coin not in ["FC", "TKC", "BTC", "CTC", "RP"]:
         return Error('InternalError', message='Invalid coin select')
 
     # Sort pending transactions
@@ -41,7 +42,7 @@ def mine(coin, miner_address = None, private_key = None):
         if not success:
             blockchain.current_transactions.remove(transaction)
 
-    if coin == "BTC" or coin == "CTC":
+    if coin == "BTC" or coin == "CTC" or coin == "RP":
         if miner_address is not None and private_key is not None:
             reward_transaction = wallet.create_reward_transaction_for_sommeone(private_key, miner_address, COIN_REWARD_MAPPING[coin] + txn_fee)
         else:
@@ -108,11 +109,11 @@ def broadcast_node(node):
     
 # POST - Broadcast Transaction Information to Peer Nodes
 @method
-def broadcast_transaction(sender, recipient, signature, amount, sender_wallet_address, transaction_fee):
-    result = blockchain.add_transaction(sender, recipient, signature, amount, sender_wallet_address, transaction_fee, is_receiving=True)
+def broadcast_transaction(sender, recipient, signature, amount, sender_wallet_address, transaction_fee, referral_code):
+    result = blockchain.add_transaction(sender, recipient, signature, amount, sender_wallet_address, transaction_fee, referral_code, is_receiving=True)
 
     if result:
-        transaction = blockchain.new_transaction(sender, recipient, amount, signature, sender_wallet_address, transaction_fee)
+        transaction = blockchain.new_transaction(sender, recipient, amount, signature, sender_wallet_address, transaction_fee, referral_code)
         
         blockchain.export_blockchain()
         return Success({'transaction': transaction.to_dict()})
@@ -228,9 +229,8 @@ def sync_chain(chain):
     else:
         return Success("Chain not updated")
 
-
 @method
-def new_transaction(sender, private_key, recipient, amount, sender_wallet_address, transaction_fee):
+def new_transaction(sender, private_key, recipient, amount, sender_wallet_address, transaction_fee, referral_code=""):
     # Check that all parameters are not null or empty
     if not sender:
         return Error('InvalidParameter', message='Sender cannot be null or empty.')
@@ -242,14 +242,15 @@ def new_transaction(sender, private_key, recipient, amount, sender_wallet_addres
         return Error('InvalidParameter', message='Sender wallet address cannot be null or empty.')
     if not transaction_fee:
         return Error('InvalidParameter', message='Transaction fee cannot be null or empty.')
-        
+    
+    print(referral_code)
    
     # signature = wallet.sign_transaction(wallet.public_key, recipient, amount)
     # success = blockchain.add_transaction(wallet.public_key, recipient, signature, amount, wallet.address)
     amount = float(amount)
     transaction_fee = float(transaction_fee)
     signature = wallet.sign_transaction(sender, private_key, recipient, amount)
-    result = blockchain.add_transaction(sender, recipient, signature, amount, sender_wallet_address, transaction_fee)
+    result = blockchain.add_transaction(sender, recipient, signature, amount, sender_wallet_address, transaction_fee, referral_code)
     if not blockchain.nodes:
         return Error('InternalError', message='There are no nodes in your network')
     if result:
@@ -410,7 +411,7 @@ def list_services():
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--coin', type=int, choices=[1, 2, 3, 4], help='Select the coin: 1 for FC, 2 for TKC, 3 for BTC, 4 for CTC')
+    parser.add_argument('-c', '--coin', type=int, choices=[1, 2, 3, 4, 5], help='Select the coin: 1 for FC, 2 for TKC, 3 for BTC, 4 for CTC, 5 for RP')
     parser.add_argument('-f', '--file', type=str, help='File name for manual blockchain import')
     parser.add_argument('-m', '--manual', action='store_true', help='Disable automatic port forwarding')
     args = parser.parse_args()
@@ -428,12 +429,15 @@ if __name__ == '__main__':
         private_key = "7e83d27dba4b07b4ff98a2c22763f4e4fd2a462eef10117bcbc0e0a56ce38f42"
     elif coin_select == 4:
         private_key = "cf0c4abf0d88fc65bab333d9791fb0f6a554dd994f0c219fef0a4d2b04c326a0"
+    elif coin_select == 5:
+        private_key = "e411d466610f805edc7faaa81d70812d617eedd09c2ff0fcc6967ef0a2cb20ee"
 
     COIN_PORT_MAPPING = {
         1: 5000,
         2: 5050,
         3: 6000,
         4: 6050,
+        5: 7000
     }
 
     if not is_wallet_address(private_key):
